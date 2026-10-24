@@ -130,7 +130,7 @@ class VoiceReply(Star):
                 self.store.status(speech_id, "sent", sent_at=sent_at)
             except Exception as exc:
                 self.logger.warning(
-                    "Voice sent; receipt persistence failed: %s", type(exc).__name__
+                    "语音已发送，但发送回执保存失败：%s", type(exc).__name__
                 )
             return result(
                 ok=True,
@@ -175,7 +175,7 @@ class VoiceReply(Star):
             self.store.status(speech_id, state, error=error)
         except Exception as exc:
             self.logger.warning(
-                "Voice failure receipt unavailable: %s", type(exc).__name__
+                "语音失败回执保存失败：%s", type(exc).__name__
             )
 
     async def terminate(self):
