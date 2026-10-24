@@ -8,6 +8,7 @@ import hashlib
 import json
 import uuid
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from astrbot.api import AstrBotConfig, llm_tool
 from astrbot.api.event import AstrMessageEvent, filter
@@ -20,9 +21,6 @@ from astrbot.core.provider.register import llm_tools
 from .history import HistoryWriter
 from .store import Store
 from .synthesis import SERVICE_TEXT_LIMIT, HttpSpeechService, SpeechError, SpeechService
-
-INSTRUCTIONS = """撒娇、卖萌等表达情绪的时候，可以用 voice_send 发语音，每条十个字以内。
-发了语音就尽量不要再打字，最多配一个表情包。"""
 
 
 class VoiceReply(Star):
@@ -47,11 +45,10 @@ class VoiceReply(Star):
             if req.func_tool is not None:
                 req.func_tool.remove_tool("voice_send")
             return
-        req.system_prompt += "\n\n" + INSTRUCTIONS
 
     @llm_tool(name="voice_send")
     async def send(self, event: AstrMessageEvent, text: str) -> str:
-        """发送语音到当前对话。
+        """发送语音到当前对话。表达完毕后，可单独调用 silence 结束本轮。
 
         Args:
             text(string): 要说的话。
@@ -125,6 +122,12 @@ class VoiceReply(Star):
                 MessageChain([Record.fromFileSystem(str(path), text=audio.spoken_text)])
             )
             sent_at = datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds")
+            zone = ZoneInfo(
+                self.context.get_config(umo=event.unified_msg_origin).get(
+                    "timezone", "Asia/Shanghai"
+                )
+                or "Asia/Shanghai"
+            )
             attempts[key] = "sent"
             try:
                 self.store.status(speech_id, "sent", sent_at=sent_at)
@@ -137,7 +140,9 @@ class VoiceReply(Star):
                 sent=True,
                 speech_id=speech_id,
                 text=audio.spoken_text,
-                sent_at=sent_at,
+                sent_at=datetime.datetime.fromisoformat(sent_at)
+                .astimezone(zone)
+                .strftime("%Y-%m-%d %H:%M:%S"),
             )
         except asyncio.CancelledError:
             if generated:
@@ -149,9 +154,11 @@ class VoiceReply(Star):
             raise
         except Exception as exc:
             error = str(exc) if isinstance(exc, SpeechError) else type(exc).__name__
-            generation_unknown = error in (
-                "tts_timeout_no_automatic_retry", "tts_network_error"
-            ) or error.startswith("tts_http_5") and error != "tts_http_503"
+            generation_unknown = (
+                error in ("tts_timeout_no_automatic_retry", "tts_network_error")
+                or error.startswith("tts_http_5")
+                and error != "tts_http_503"
+            )
             if generated:
                 self._record_failure(
                     speech_id, "unknown" if sending else "failed", error
@@ -174,9 +181,7 @@ class VoiceReply(Star):
         try:
             self.store.status(speech_id, state, error=error)
         except Exception as exc:
-            self.logger.warning(
-                "语音失败回执保存失败：%s", type(exc).__name__
-            )
+            self.logger.warning("语音失败回执保存失败：%s", type(exc).__name__)
 
     async def terminate(self):
         self._closing = True

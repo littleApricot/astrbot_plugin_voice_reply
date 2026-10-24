@@ -1,7 +1,7 @@
 name: astrbot_plugin_voice_reply
 display_name: 自主语音回复
 desc: 让模型自行选择发送语音，支持发送后沉默，官方历史上下文保留实际说出的原文。
-version: v0.1.2
+version: v0.1.3
 author: littleApricot
 repo: https://github.com/littleApricot/astrbot_plugin_voice_reply
 astrbot_version: ">=4.29.1,<4.30.0"
