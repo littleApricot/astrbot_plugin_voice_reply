@@ -1,0 +1,31 @@
+{
+  "enabled": {
+    "description": "启用自主语音回复",
+    "type": "bool",
+    "default": true
+  },
+  "api_base_url": {
+    "description": "语音服务根地址",
+    "type": "string",
+    "default": "",
+    "hint": "填写语音服务器的 http(s) 地址，插件调用 /tts。临时隧道地址变更后，在这里修改。"
+  },
+  "api_key": {
+    "description": "语音服务 API Key",
+    "type": "string",
+    "default": "",
+    "hint": "只填密钥本身，插件会添加 Authorization: Bearer。密钥只保存在你的插件配置中。"
+  },
+  "synthesis_timeout_seconds": {
+    "description": "语音合成超时秒数",
+    "type": "int",
+    "default": 120,
+    "hint": "默认120秒，不含本地排队时间。合成超时后不自动重试；模型可以正常回复文字。"
+  },
+  "max_text_chars": {
+    "description": "单条语音原文字符上限",
+    "type": "int",
+    "default": 300,
+    "hint": "接口最多支持300个字符，可设为更小的值。"
+  }
+}
