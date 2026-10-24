@@ -21,15 +21,8 @@ from .history import HistoryWriter
 from .store import Store
 from .synthesis import SERVICE_TEXT_LIMIT, HttpSpeechService, SpeechError, SpeechService
 
-INSTRUCTIONS = """你可以根据当前对话自行选择文字或语音回复，不必每次发语音。
-决定发语音时，用 voice_send(text) 传入你实际想说出的完整原文，不要附加工具执行汇报。
-单次语音原文最多300个字符。长内容可以正常回复文字；需要多条语音时，按顺序在后续工具步骤发送，不要并行提交。
-工具只发送语音，不会自动结束本轮；先读取发送结果，再决定下一步。
-语音成功且已表达完毕、本轮有 silence 工具时，可以在下一步单独调用 silence，正文留空，结束本轮。
-也可以在发语音后继续正常回复文字，但不要重复已经说过的同一句话。
-失败不代表已经送达，送达状态不确定时不要重发同一条语音，可以用正常文字继续沟通。
-后续历史上下文中标明已发送的语音原文，就是你之前实际说过的话。
-"""
+INSTRUCTIONS = """撒娇、卖萌等表达情绪的时候，可以用 voice_send 发语音，每条十个字以内。
+发了语音就尽量不要再打字，最多配一个表情包。"""
 
 
 class VoiceReply(Star):
@@ -58,13 +51,13 @@ class VoiceReply(Star):
 
     @llm_tool(name="voice_send")
     async def send(self, event: AstrMessageEvent, text: str) -> str:
-        """选择用语音说话，合成并发送到当前对话，只负责发送语音。
+        """发送语音到当前对话。
 
         Args:
-            text(string): 你想实际说出的完整原文，1至300个字符，不要包含工具执行汇报。
+            text(string): 要说的话。
 
         Returns:
-            ok、sent、语音原文及发送时间，或失败结果。确认发送成功后，可在后续一步单独调用 silence 结束本轮，也可继续回复文字。送达不确定时不要重发。
+            发送结果。
         """
 
         def result(**data):
